@@ -1,0 +1,836 @@
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("HeltixWare", "DarkTheme")
+
+-- MAIN
+local Main = Window:NewTab("Main")
+local Aimlock = Main:NewSection("Main")
+
+
+Aimlock:NewButton("Aimlock", "Q to lock P to disable", function()
+    getgenv().Prediction = 0.1248710929171	
+    getgenv().AimPart = "HumanoidRootPart"	
+    getgenv().Key = "Q"	
+    getgenv().DisableKey = "P"	
+        
+    getgenv().FOV = true	
+    getgenv().ShowFOV = false	
+    getgenv().FOVSize = 55	
+        
+    --// Variables (Service)	
+        
+    local Players = game:GetService("Players")	
+    local RS = game:GetService("RunService")	
+    local WS = game:GetService("Workspace")	
+    local GS = game:GetService("GuiService")	
+    local SG = game:GetService("StarterGui")	
+        
+    --// Variables (regular)	
+        
+    local LP = Players.LocalPlayer	
+    local Mouse = LP:GetMouse()	
+    local Camera = WS.CurrentCamera	
+    local GetGuiInset = GS.GetGuiInset	
+        
+    local AimlockState = true	
+    local Locked	
+    local Victim	
+        
+    local SelectedKey = getgenv().Key	
+    local SelectedDisableKey = getgenv().DisableKey	
+        
+    --// Notification function	
+        
+    function Notify(tx)	
+        SG:SetCore("SendNotification", {	
+            Title = "Heltix’s Camlock",	
+            Text = tx,	
+    Duration = 5	
+        })	
+    end	
+        
+    --// Check if aimlock is loaded	
+        
+    if getgenv().Loaded == true then	
+        Notify("Aimlock is already loaded!")	
+        return	
+    end	
+        
+    getgenv().Loaded = true	
+        
+    --// FOV Circle	
+        
+    local fov = Drawing.new("Circle")	
+    fov.Filled = false	
+    fov.Transparency = 1	
+    fov.Thickness = 1	
+    fov.Color = Color3.fromRGB(255, 255, 0)	
+    fov.NumSides = 1000	
+        
+    --// Functions	
+        
+    function update()	
+        if getgenv().FOV == true then	
+            if fov then	
+    fov.Radius = getgenv().FOVSize * 2	
+                fov.Visible = getgenv().ShowFOV	
+    fov.Position = Vector2.new(Mouse.X, Mouse.Y + GetGuiInset(GS).Y)	
+        
+                return fov	
+            end	
+        end	
+    end	
+        
+    function WTVP(arg)	
+        return Camera:WorldToViewportPoint(arg)	
+    end	
+        
+    function WTSP(arg)	
+        return Camera.WorldToScreenPoint(Camera, arg)	
+    end	
+        
+    function getClosest()	
+        local closestPlayer	
+        local shortestDistance = math.huge	
+        
+        for i, v in pairs(game.Players:GetPlayers()) do	
+            local notKO = v.Character:WaitForChild("BodyEffects")["K.O"].Value ~= true	
+            local notGrabbed = v.Character:FindFirstChild("GRABBING_COINSTRAINT") == nil	
+                
+    if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health ~= 0 and v.Character:FindFirstChild(getgenv().AimPart) and notKO and notGrabbed then	
+                local pos = Camera:WorldToViewportPoint(v.Character.PrimaryPart.Position)	
+    local magnitude = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).magnitude	
+                    
+                if (getgenv().FOV) then	
+                    if (fov.Radius > magnitude and magnitude < shortestDistance) then	
+                        closestPlayer = v	
+                        shortestDistance = magnitude	
+                    end	
+                else	
+                    if (magnitude < shortestDistance) then	
+                        closestPlayer = v	
+                        shortestDistance = magnitude	
+                    end	
+                end	
+            end	
+        end	
+        return closestPlayer	
+    end	
+        
+    --// Checks if key is down	
+        
+    Mouse.KeyDown:Connect(function(k)	
+        SelectedKey = SelectedKey:lower()	
+        SelectedDisableKey = SelectedDisableKey:lower()	
+        if k == SelectedKey then	
+            if AimlockState == true then	
+                Locked = not Locked	
+                if Locked then	
+                    Victim = getClosest()	
+        
+                    Notify("Locked onto: "..tostring(Victim.Character.Humanoid.DisplayName))	
+                else	
+                    if Victim ~= nil then	
+                        Victim = nil	
+        
+                        Notify("Unlocked!")	
+                    end	
+                end	
+            else	
+                Notify("Aimlock is not enabled!")	
+            end	
+        end	
+        if k == SelectedDisableKey then	
+            AimlockState = not AimlockState	
+        end	
+    end)	
+        
+    --// Loop update FOV and loop camera lock onto target	
+        
+    RS.RenderStepped:Connect(function()	
+        update()	
+        if AimlockState == true then	
+            if Victim ~= nil then	
+                Camera.CFrame = CFrame.new(Camera.CFrame.p, Victim.Character[getgenv().AimPart].Position + Victim.Character[getgenv().AimPart].Velocity*getgenv().Prediction)	
+            end	
+        end	
+    end)	
+        while wait() do
+            if getgenv().AutoPrediction == true then	
+            local pingvalue = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString()	
+            local split = string.split(pingvalue,'(')	
+    local ping = tonumber(split[1])	
+    if ping < 225 then	
+    getgenv().Prediction = 1.4	
+    elseif ping < 215 then	
+    getgenv().Prediction = 1.2	
+        elseif ping < 205 then
+    getgenv().Prediction = 1.0	
+        elseif ping < 190 then
+    getgenv().Prediction = 0.10	
+    elseif ping < 180 then	
+    getgenv().Prediction = 0.12	
+        elseif ping < 170 then
+    getgenv().Prediction = 0.15	
+        elseif ping < 160 then
+    getgenv().Prediction = 0.18	
+        elseif ping < 150 then
+    getgenv().Prediction = 0.110	
+    elseif ping < 140 then	
+    getgenv().Prediction = 0.113	
+    elseif ping < 130 then	
+    getgenv().Prediction = 0.116	
+    elseif ping < 120 then	
+    getgenv().Prediction = 0.120	
+    elseif ping < 110 then	
+    getgenv().Prediction = 0.124	
+    elseif ping < 105 then	
+    getgenv().Prediction = 0.127	
+    elseif ping < 90 then	
+    getgenv().Prediction = 0.130	
+    elseif ping < 80 then	
+    getgenv().Prediction = 0.133	
+    elseif ping < 70 then	
+    getgenv().Prediction = 0.136	
+    elseif ping < 60 then	
+    getgenv().Prediction = 0.140	
+    elseif ping < 50 then	
+    getgenv().Prediction = 0.143	
+    elseif ping < 40 then	
+    getgenv().Prediction = 0.145	
+    elseif ping < 30 then	
+    getgenv().Prediction = 0.155	
+    elseif ping < 20 then	
+    getgenv().Prediction = 0.157	
+            end	
+            end	
+        end
+end)
+
+Aimlock:NewButton("Silent-aim", "T to toggle key", function()
+    local hotkey = "t" -- toggle key
+    local mouse = game.Players.LocalPlayer:GetMouse()
+    
+    
+    
+    mouse.KeyDown:Connect(function(key)
+    if key == hotkey then
+    if getgenv().ValiantAimHacks.SilentAimEnabled == true then
+     getgenv().ValiantAimHacks.SilentAimEnabled = false
+    else
+    getgenv().ValiantAimHacks.SilentAimEnabled = true
+    end
+    end
+    end)
+    
+    
+    -- // Services
+    local Players = game:GetService("Players")
+    
+    -- // Vars
+    local LocalPlayer = Players.LocalPlayer
+    local accomidationfactor = 0.12567724521
+    
+    -- // Silent Aim Module
+    local SilentAim = loadstring(game:HttpGet("https://pastebin.com/raw/2f0mGbMP"))()
+    SilentAim.TeamCheck = false
+    -- // Metatable vars
+    local mt = getrawmetatable(game)
+    local backupindex = mt.__index
+    setreadonly(mt, false)
+    
+    -- // Check if player is down
+    SilentAim.checkSilentAim = function()
+        local checkA = (SilentAim.SilentAimEnabled == true and SilentAim.Selected ~= LocalPlayer)
+        local playerCharacter = SilentAim.Selected.Character
+        local daHood = (playerCharacter.BodyEffects["K.O"].Value == false or playerCharacter:FindFirstChild("GRABBING_CONSTRAINT") ~= nil)
+    
+        return (checkA and daHood)
+    end
+    
+    -- // Hook
+    mt.__index = newcclosure(function(t, k)
+        if (t:IsA("Mouse") and (k == "Hit")) then
+            print(t, k)
+            local CPlayer = SilentAim.Selected
+            if (SilentAim.checkSilentAim()) then
+                if (CPlayer.Character:FindFirstChild("HumanoidRootPart")) then
+                    return {p=(CPlayer.Character.HumanoidRootPart.CFrame.p+(CPlayer.Character.HumanoidRootPart.Velocity*accomidationfactor))}
+                end
+            end
+        end
+        return backupindex(t, k)
+    end)
+    
+    -- // Revert
+    setreadonly(mt, true)
+    getgenv().ValiantAimHacks.FOV = 50   
+end)
+
+Aimlock:NewButton("Antilock", "local KeyCode z", function()
+    local Toggled = true
+    local KeyCode = 'z'
+    local hip = 2.80
+    local val = -35
+    
+    
+    
+    
+    
+    function AA()
+        local oldVelocity = game.Players.LocalPlayer.Character.HumanoidRootPart.Velocity
+        game.Players.LocalPlayer.Character.HumanoidRootPart.Velocity = Vector3.new(oldVelocity.X, val, oldVelocity.Z)
+        game.Players.LocalPlayer.Character.HumanoidRootPart.Velocity = Vector3.new(oldVelocity.X, oldVelocity.Y, oldVelocity.Z)
+        game.Players.LocalPlayer.Character.HumanoidRootPart.Velocity = Vector3.new(oldVelocity.X, val, oldVelocity.Z)
+        game.Players.LocalPlayer.Character.Humanoid.HipHeight = hip
+    end
+    
+    game:GetService('UserInputService').InputBegan:Connect(function(Key)
+        if Key.KeyCode == Enum.KeyCode[KeyCode:upper()] and not game:GetService('UserInputService'):GetFocusedTextBox() then
+            if Toggled then
+                Toggled = false
+                game.Players.LocalPlayer.Character.Humanoid.HipHeight = hip
+    
+            elseif not Toggled then
+                Toggled = true
+    
+                while Toggled do
+                    AA()
+                    task.wait()
+                end
+            end
+        end
+    end)
+end)
+
+Aimlock:NewButton("AntiLockResolver", "doesn't works on any antilock", function()
+    local RunService = game:GetService("RunService")
+
+    local function zeroOutYVelocity(hrp)
+        hrp.Velocity = Vector3.new(hrp.Velocity.X, 0, hrp.Velocity.Z)
+        hrp.AssemblyLinearVelocity = Vector3.new(hrp.Velocity.X, 0, hrp.Velocity.Z)
+    end
+    
+    local function onPlayerAdded(player)
+        player.CharacterAdded:Connect(function(character)
+            local hrp = character:WaitForChild("HumanoidRootPart")
+            zeroOutYVelocity(hrp)
+        end)
+    end
+    
+    local function onPlayerRemoving(player)
+        player.CharacterAdded:Disconnect()
+    end
+    
+    game.Players.PlayerAdded:Connect(onPlayerAdded)
+    game.Players.PlayerRemoving:Connect(onPlayerRemoving)
+    
+    RunService.Heartbeat:Connect(function()
+        pcall(function()
+            for i, player in pairs(game.Players:GetChildren()) do
+                if player.Name ~= game.Players.LocalPlayer.Name then
+                    local hrp = player.Character.HumanoidRootPart
+                    zeroOutYVelocity(hrp)
+                end
+            end
+        end)
+    end)
+end)
+
+local other = Window:NewTab("other")
+local othersection = other:NewSection("other")
+
+
+othersection:NewButton("bypassed fly", "not my script", function()
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "Credits";
+        Text = "Modified By Heltix";
+        Duration = 2.5;
+    })
+-- Gui to Lua
+-- Version: 3.2
+
+-- Instances:
+
+local main = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local up = Instance.new("TextButton")
+local down = Instance.new("TextButton")
+local onof = Instance.new("TextButton")
+local TextLabel = Instance.new("TextLabel")
+local plus = Instance.new("TextButton")
+local speed = Instance.new("TextLabel")
+local mine = Instance.new("TextButton")
+
+--Properties:
+
+main.Name = "main"
+main.Parent = game.CoreGui
+main.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+Frame.Parent = main
+Frame.BackgroundColor3 = Color3.fromRGB(163, 255, 137)
+Frame.BorderColor3 = Color3.fromRGB(103, 221, 213)
+Frame.Position = UDim2.new(0.100320168, 0, 0.379746825, 0)
+Frame.Size = UDim2.new(0, 190, 0, 57)
+
+up.Name = "up"
+up.Parent = Frame
+up.BackgroundColor3 = Color3.fromRGB(79, 255, 152)
+up.Size = UDim2.new(0, 44, 0, 28)
+up.Font = Enum.Font.SourceSans
+up.Text = "UP"
+up.TextColor3 = Color3.fromRGB(0, 0, 0)
+up.TextSize = 14.000
+
+down.Name = "down"
+down.Parent = Frame
+down.BackgroundColor3 = Color3.fromRGB(215, 255, 121)
+down.Position = UDim2.new(0, 0, 0.491228074, 0)
+down.Size = UDim2.new(0, 44, 0, 28)
+down.Font = Enum.Font.SourceSans
+down.Text = "DOWN"
+down.TextColor3 = Color3.fromRGB(0, 0, 0)
+down.TextSize = 14.000
+
+onof.Name = "onof"
+onof.Parent = Frame
+onof.BackgroundColor3 = Color3.fromRGB(255, 249, 74)
+onof.Position = UDim2.new(0.702823281, 0, 0.491228074, 0)
+onof.Size = UDim2.new(0, 56, 0, 28)
+onof.Font = Enum.Font.SourceSans
+onof.Text = "fly"
+onof.TextColor3 = Color3.fromRGB(0, 0, 0)
+onof.TextSize = 14.000
+
+TextLabel.Parent = Frame
+TextLabel.BackgroundColor3 = Color3.fromRGB(242, 60, 255)
+TextLabel.Position = UDim2.new(0.469327301, 0, 0, 0)
+TextLabel.Size = UDim2.new(0, 100, 0, 28)
+TextLabel.Font = Enum.Font.SourceSans
+TextLabel.Text = "gui by me_ozoneYT"
+TextLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+TextLabel.TextScaled = true
+TextLabel.TextSize = 14.000
+TextLabel.TextWrapped = true
+
+plus.Name = "plus"
+plus.Parent = Frame
+plus.BackgroundColor3 = Color3.fromRGB(133, 145, 255)
+plus.Position = UDim2.new(0.231578946, 0, 0, 0)
+plus.Size = UDim2.new(0, 45, 0, 28)
+plus.Font = Enum.Font.SourceSans
+plus.Text = "+"
+plus.TextColor3 = Color3.fromRGB(0, 0, 0)
+plus.TextScaled = true
+plus.TextSize = 14.000
+plus.TextWrapped = true
+
+speed.Name = "speed"
+speed.Parent = Frame
+speed.BackgroundColor3 = Color3.fromRGB(255, 85, 0)
+speed.Position = UDim2.new(0.468421042, 0, 0.491228074, 0)
+speed.Size = UDim2.new(0, 44, 0, 28)
+speed.Font = Enum.Font.SourceSans
+speed.Text = "1"
+speed.TextColor3 = Color3.fromRGB(0, 0, 0)
+speed.TextScaled = true
+speed.TextSize = 14.000
+speed.TextWrapped = true
+
+mine.Name = "mine"
+mine.Parent = Frame
+mine.BackgroundColor3 = Color3.fromRGB(123, 255, 247)
+mine.Position = UDim2.new(0.231578946, 0, 0.491228074, 0)
+mine.Size = UDim2.new(0, 45, 0, 29)
+mine.Font = Enum.Font.SourceSans
+mine.Text = "-"
+mine.TextColor3 = Color3.fromRGB(0, 0, 0)
+mine.TextScaled = true
+mine.TextSize = 14.000
+mine.TextWrapped = true
+
+speeds = 1
+
+local speaker = game:GetService("Players").LocalPlayer
+
+local chr = game.Players.LocalPlayer.Character
+local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+
+nowe = false
+
+Frame.Active = true -- main = gui
+Frame.Draggable = true
+
+onof.MouseButton1Down:connect(function()
+
+if nowe == true then
+nowe = false
+
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Landed,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Running,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics,true)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming,true)
+speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+else 
+nowe = true
+
+
+
+for i = 1, speeds do
+    spawn(function()
+
+        local hb = game:GetService("RunService").Heartbeat	
+
+
+        tpwalking = true
+        local chr = game.Players.LocalPlayer.Character
+        local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+        while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+            if hum.MoveDirection.Magnitude > 0 then
+                chr:TranslateBy(hum.MoveDirection)
+            end
+        end
+
+    end)
+end
+game.Players.LocalPlayer.Character.Animate.Disabled = true
+local Char = game.Players.LocalPlayer.Character
+local Hum = Char:FindFirstChildOfClass("Humanoid") or Char:FindFirstChildOfClass("AnimationController")
+
+for i,v in next, Hum:GetPlayingAnimationTracks() do
+    v:AdjustSpeed(0)
+end
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Landed,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Running,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics,false)
+speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming,false)
+speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+end
+
+
+
+
+
+local plr = game.Players.LocalPlayer
+local UpperTorso = plr.Character.LowerTorso
+local flying = true
+local deb = true
+local ctrl = {f = 0, b = 0, l = 0, r = 0}
+local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+local maxspeed = 50
+local speed = 0
+
+
+local bg = Instance.new("BodyGyro", UpperTorso)
+bg.P = 9e4
+bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+bg.cframe = UpperTorso.CFrame
+local bv = Instance.new("BodyVelocity", UpperTorso)
+bv.velocity = Vector3.new(0,0.1,0)
+bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+if nowe == true then
+    plr.Character.Humanoid.PlatformStand = true
+end
+while nowe == true or game:GetService("Players").LocalPlayer.Character.Humanoid.Health == 0 do
+    wait()
+
+    if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+        speed = speed+.5+(speed/maxspeed)
+        if speed > maxspeed then
+            speed = maxspeed
+        end
+    elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed ~= 0 then
+        speed = speed-1
+        if speed < 0 then
+            speed = 0
+        end
+    end
+    if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+        bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+        lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+    elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
+        bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f+lastctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l+lastctrl.r,(lastctrl.f+lastctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+    else
+        bv.velocity = Vector3.new(0,0,0)
+    end
+
+    bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
+end
+ctrl = {f = 0, b = 0, l = 0, r = 0}
+lastctrl = {f = 0, b = 0, l = 0, r = 0}
+speed = 0
+bg:Destroy()
+bv:Destroy()
+plr.Character.Humanoid.PlatformStand = false
+game.Players.LocalPlayer.Character.Animate.Disabled = false
+tpwalking = false
+
+
+
+
+
+
+
+
+
+end)
+
+
+up.MouseButton1Down:connect(function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,2,0)
+
+end)
+
+
+down.MouseButton1Down:connect(function()
+
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,-2,0)
+
+end)
+
+
+game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(char)
+wait(0.7)
+game.Players.LocalPlayer.Character.Humanoid.PlatformStand = false
+game.Players.LocalPlayer.Character.Animate.Disabled = false
+
+end)
+
+
+plus.MouseButton1Down:connect(function()
+speeds = speeds + 1
+speed.Text = speeds
+if nowe == true then
+
+
+tpwalking = false
+for i = 1, speeds do
+spawn(function()
+
+    local hb = game:GetService("RunService").Heartbeat	
+
+
+    tpwalking = true
+    local chr = game.Players.LocalPlayer.Character
+    local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+    while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+        if hum.MoveDirection.Magnitude > 0 then
+            chr:TranslateBy(hum.MoveDirection)
+        end
+    end
+
+end)
+end
+end
+end)
+mine.MouseButton1Down:connect(function()
+if speeds == 1 then
+speed.Text = 'can not be less than 1'
+wait(1)
+speed.Text = speeds
+else
+speeds = speeds - 1
+speed.Text = speeds
+if nowe == true then
+tpwalking = false
+for i = 1, speeds do
+spawn(function()
+
+    local hb = game:GetService("RunService").Heartbeat	
+
+
+    tpwalking = true
+    local chr = game.Players.LocalPlayer.Character
+    local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+    while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+        if hum.MoveDirection.Magnitude > 0 then
+            chr:TranslateBy(hum.MoveDirection)
+        end
+    end
+
+end)
+end
+end
+end
+end)
+end)
+
+local Settings = Window:NewTab("Settings")
+local Settings = Settings:NewSection("Settings")
+
+
+Settings:NewKeybind("Close/open gui key", "V to close/open gui or u can make ur own ", Enum.KeyCode.V, function()
+	Library:ToggleUI()
+end)
+
+local Credits = Window:NewTab("Credits")
+local Credits = Credits:NewSection("Credits")
+
+Credits:NewLabel("Script maded my HELTIX")
+
+Credits:NewLabel("HELTIX#8209 my discord")
+
+Credits:NewLabel("Scripts is not done")
+
+othersection:NewButton("Fly(X)", "This is not bypassed fly", function()
+    local plr = game.Players.LocalPlayer
+    local mouse = plr:GetMouse()
+    
+    localplayer = plr
+    
+    if workspace:FindFirstChild("Core") then
+    workspace.Core:Destroy()
+    end
+    
+    local Core = Instance.new("Part")
+    Core.Name = "Core"
+    Core.Size = Vector3.new(0.05, 0.05, 0.05)
+    
+    spawn(function()
+    Core.Parent = workspace
+    local Weld = Instance.new("Weld", Core)
+    Weld.Part0 = Core
+    Weld.Part1 = localplayer.Character.LowerTorso
+    Weld.C0 = CFrame.new(0, 0, 0)
+    end)
+    
+    workspace:WaitForChild("Core")
+    
+    local torso = workspace.Core
+    flying = true
+    local speed=10
+    local keys={a=false,d=false,w=false,s=false}
+    local e1
+    local e2
+    local function start()
+    local pos = Instance.new("BodyPosition",torso)
+    local gyro = Instance.new("BodyGyro",torso)
+    pos.Name="EPIXPOS"
+    pos.maxForce = Vector3.new(math.huge, math.huge, math.huge)
+    pos.position = torso.Position
+    gyro.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+    gyro.cframe = torso.CFrame
+    repeat
+    wait()
+    localplayer.Character.Humanoid.PlatformStand=true
+    local new=gyro.cframe - gyro.cframe.p + pos.position
+    if not keys.w and not keys.s and not keys.a and not keys.d then
+    speed=5
+    end
+    if keys.w then
+    new = new + workspace.CurrentCamera.CoordinateFrame.lookVector * speed
+    speed=speed+0
+    end
+    if keys.s then
+    new = new - workspace.CurrentCamera.CoordinateFrame.lookVector * speed
+    speed=speed+0
+    end
+    if keys.d then
+    new = new * CFrame.new(speed,0,0)
+    speed=speed+0
+    end
+    if keys.a then
+    new = new * CFrame.new(-speed,0,0)
+    speed=speed+0
+    end
+    if speed>10 then
+    speed=5
+    end
+    pos.position=new.p
+    if keys.w then
+    gyro.cframe = workspace.CurrentCamera.CoordinateFrame*CFrame.Angles(-math.rad(speed*0),0,0)
+    elseif keys.s then
+    gyro.cframe = workspace.CurrentCamera.CoordinateFrame*CFrame.Angles(math.rad(speed*0),0,0)
+    else
+    gyro.cframe = workspace.CurrentCamera.CoordinateFrame
+    end
+    until flying == false
+    if gyro then gyro:Destroy() end
+    if pos then pos:Destroy() end
+    flying=false
+    localplayer.Character.Humanoid.PlatformStand=false
+    speed=10
+    end
+    e1=mouse.KeyDown:connect(function(key)
+    if not torso or not torso.Parent then flying=false e1:disconnect() e2:disconnect() return end
+    if key=="w" then
+    keys.w=true
+    elseif key=="s" then
+    keys.s=true
+    elseif key=="a" then
+    keys.a=true
+    elseif key=="d" then
+    keys.d=true
+    elseif key=="x" then
+    if flying==true then
+    flying=false
+    else
+    flying=true
+    start()
+    end
+    end
+    end)
+    e2=mouse.KeyUp:connect(function(key)
+    if key=="w" then
+    keys.w=false
+    elseif key=="s" then
+    keys.s=false
+    elseif key=="a" then
+    keys.a=false
+    elseif key=="d" then
+    keys.d=false
+    end
+    end)
+    start()
+end)
+
+othersection:NewSlider("Walkspeed", "Speed", 500, 16, function(s) -- 500 (MaxValue) | 0 (MinValue)
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = s
+end)
+
+othersection:NewButton("reset walkspeed", "resets to default", function()
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
+end)
+
+local http_request = syn and syn.request or request;
+local hwidPaste = loadstring(game:HttpGet("https://pastebin.com/raw/f2fqCGCk"))()
+
+local body = http_request({Url = 'https://httpbin.org/get'; Method = 'GET'}).Body;
+local decoded = game:GetService("HttpService"):JSONDecode(body)
+local hwid = decoded.headers['Syn-Fingerprint']
+
+for i, v in pairs(hwidPaste) do
+    if v == hwid then
+        print("Whitelisted")
+        loadstring(game:HttpGet("", true))()
+    else
+        for _,v in pairs(game.Players:GetPlayers()) do
+            if v:IsA("Player") then
+            v:Kick("Not Whitelisted")
+            end end
+    end
+end
+
+setclipboard(hwid)
